@@ -1,16 +1,14 @@
 package ru.npf_paker.wms;
 
+import android.app.Activity;
 import android.app.Dialog;
+import android.arch.core.util.Function;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.util.Log;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -19,7 +17,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.EditText;
 import android.widget.Toast;
 
 
@@ -27,15 +24,18 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
+import data.Act;
+import data.ActItem;
 import helpers.MqttHelper;
+import ru.npf_paker.wms.dummy.DummyContent;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, InputFormFragment.OnLinkItemSelectedListener, ActsFragment.OnFragmentInteractionListener {
-    MqttHelper mqttHelper;
+        implements NavigationView.OnNavigationItemSelectedListener, InputFormFragment.OnLinkItemSelectedListener, ActsFragment.OnFragmentInteractionListener,
+        BatchFragment.OnListFragmentInteractionListener, ActItemFragment.OnListFragmentInteractionListener {
+    public static MqttHelper mqttHelper;
     public Dialog quantityDialog;
+    BatchDialogFragment batchDialogFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,12 +66,12 @@ public class MainActivity extends AppCompatActivity
 
         startMqtt();
 
-        quantityDialog = new Dialog(MainActivity.this);
-
-        // Установите заголовок
-        quantityDialog.setTitle("Заголовок диалога");
-        // Передайте ссылку на разметку
-        quantityDialog.setContentView(R.layout.quantity_dialog);
+//        quantityDialog = new Dialog(MainActivity.this);
+//
+//        // Установите заголовок
+//        quantityDialog.setTitle("Заголовок диалога");
+//        // Передайте ссылку на разметку
+//        quantityDialog.setContentView(R.layout.quantity_dialog);
         // Найдите элемент TextView внутри вашей разметки
         // и установите ему соответствующий текст
 //        TextView text = (TextView) dialog.findViewById(R.id.dialogTextView);
@@ -93,13 +93,19 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
-                Log.w("Debug", mqttMessage.toString());
-                Toast.makeText(getApplicationContext(), mqttMessage.toString(), Toast.LENGTH_SHORT).show();
+//                Log.w("Debug", mqttMessage.toString());
+                Function f = DataStore.functionHashMap.get(mqttHelper.subscriptionTopic);
+                if (f != null){
+                    f.apply(mqttMessage.toString());
+                } else {
+                    Toast.makeText(getApplicationContext(), "func null", Toast.LENGTH_SHORT).show();
+                }
+                Toast.makeText(getApplicationContext(), mqttMessage.toString().substring(0,100), Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-
+                Toast.makeText(getApplicationContext(), "deliveryComplete", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -136,12 +142,22 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    private static final int REQUEST_BATCH = 1;
+    private static final int REQUEST_QUANTITY = 2;
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-
+        for (Fragment fragment:getSupportFragmentManager().getFragments()) {
+//            if (fragment instanceof NavigationDrawerFragment) {
+//                continue;
+//            }
+//            else
+                if (fragment!=null) {
+                getSupportFragmentManager().beginTransaction().remove(fragment).commit();
+            }
+        }
         if (id == R.id.nav_income) {
             try {
                 InputFormFragment inputFormFragment = InputFormFragment.newInstance("", "");
@@ -158,6 +174,20 @@ public class MainActivity extends AppCompatActivity
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        } else if (id == R.id.nav_outcome_mode1) {
+//            FragmentManager fragmentManager = getSupportFragmentManager();
+//            FragmentTransaction ft = fragmentManager.beginTransaction();
+//            ft.replace(R.id.contentLayout, fragment).commit();
+
+//            Fragment f = getSupportFragmentManager().findFragmentByTag(TAG_FRAGMENT);
+//            if(f != null)
+//                getSupportFragmentManager().beginTransaction().remove(f).commit();
+
+            Act act = new Act(false);
+            BatchDialogFragment fragment = BatchDialogFragment.newInstance(act);
+            fragment.show(getSupportFragmentManager(), fragment.getClass().getName());
+            //            getSupportFragmentManager().beginTransaction().
+//                    replace(R.id.contentLayout, fragment).commit();
         } else if (id == R.id.nav_balance) {
             Toast.makeText(getApplicationContext(), "Вы выбрали камеру", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_acts) {
@@ -179,6 +209,26 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == Activity.RESULT_OK) {
+            switch (requestCode) {
+                case REQUEST_BATCH:
+                    String jsonS = data.getStringExtra(BatchDialogFragment.TAG_SELECTED);
+//                    setBatch(s);
+                    break;
+                case REQUEST_QUANTITY:
+                    int quantity = data.getIntExtra(QntDialogFragment.TAG_QNT_SELECTED, -1);
+                    //используем полученные результаты
+//                    setQuantity(Integer.toString(quantity));
+                    break;
+                //обработка других requestCode
+            }
+//            updateUI();
+        }
+    }
+
     // Now we can define the action to take in the activity when the fragment event fires
     @Override
     public void onLinkItemSelected(String json) {
@@ -191,6 +241,54 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void onListFragmentInteraction(DummyContent.DummyItem item) {
+
+    }
+
+    public void newOutcomeMode1Item(Act act) {
+//        BatchDialogFragment fragment = BatchDialogFragment.newInstance(act);
+//        getSupportFragmentManager().beginTransaction().
+//                replace(R.id.contentLayout, fragment).commit();
+        BatchDialogFragment fragment = BatchDialogFragment.newInstance(act);
+        if (fragment.isAdded()){
+            fragment.dismiss();
+        }
+        fragment.show(getSupportFragmentManager(), fragment.getClass().getName());
+    }
+
+    public void OutcomeMode1Quantity(Act act) {
+        QntDialogFragment fragment = QntDialogFragment.newInstance(act);
+        if (fragment.isAdded()){
+            fragment.dismiss();
+        }
+        fragment.show(getSupportFragmentManager(), fragment.getClass().getName());
+    }
+
+    public void OutcomeMode1Receiver(Act act) {
+        QntDialogFragment fragment = QntDialogFragment.newInstance(act);
+        if (fragment.isAdded()){
+            fragment.dismiss();
+        }
+        fragment.show(getSupportFragmentManager(), fragment.getClass().getName());
+    }
+
+    public void OutcomeMode1SubmitForm(Act act) {
+        ActItemFragment fragment = ActItemFragment.newInstance(act);
+//        if (fragment.isAdded()){
+//            fragment.dismiss();
+//        }
+//        fragment.show(getSupportFragmentManager(), fragment.getClass().getName());
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        ft.replace(R.id.contentLayout, fragment).commit();
+    }
+
+    @Override
+    public void onListFragmentInteraction(ActItem item) {
 
     }
 }

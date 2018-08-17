@@ -22,7 +22,7 @@ public class MqttHelper {
 //final String serverUri = "tcp://ws:15675";
     final String serverUri = "tcp://192.168.0.215:1883";
 
-    final String subscriptionTopic = "sensor/+";
+    public final Long subscriptionTopic = System.currentTimeMillis();
 
     final String username = "bot";
     final String password = "bot";
@@ -77,7 +77,7 @@ public class MqttHelper {
                     disconnectedBufferOptions.setPersistBuffer(false);
                     disconnectedBufferOptions.setDeleteOldestMessages(false);
                     mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
-//                    subscribeToTopic();
+                    subscribeToTopic();
                 }
 
                 @Override
@@ -95,7 +95,7 @@ public class MqttHelper {
 
     private void subscribeToTopic() {
         try {
-            mqttAndroidClient.subscribe(subscriptionTopic, 0, null, new IMqttActionListener() {
+            mqttAndroidClient.subscribe(subscriptionTopic.toString(), 0, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     Log.w("Mqtt","Subscribed!");

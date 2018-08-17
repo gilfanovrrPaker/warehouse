@@ -11,20 +11,17 @@
             android:id="@+id/nav_outcome"
             android:title="Расход" />
         <item
+            android:id="@+id/nav_outcome_mode1"
+            android:title="Расход (одинаковое количество)" />
+        <item
             android:id="@+id/nav_balance"
             android:title="Остатки" />
         <item
             android:id="@+id/nav_acts"
             android:title="Акты" />
+        <item
+            android:id="@+id/nav_share"
+            android:title="Share" />
     </group>
-
-    <item android:title="Communicate">
-        <menu>
-            <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="Share" />
-        </menu>
-    </item>
 
 </menu>

@@ -14,7 +14,22 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 
+import data.Act;
+import data.ActItem;
+
 public class QntDialogFragment extends DialogFragment {
+    private static QntDialogFragment fragment = null;
+    Act act;
+    Integer quantity;
+
+    public static QntDialogFragment newInstance(Act act) {
+        if (fragment == null)
+            fragment = new QntDialogFragment();
+        fragment.act = act;
+        fragment.quantity = 0;
+        return fragment;
+    }
+
     @Override
     public void onStart() {
         getDialog().getWindow()
@@ -33,24 +48,28 @@ public class QntDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         EditText qntText = (EditText) view.findViewById(R.id.qntText);
         builder.setView(view)
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        int i = 0;
-                        try {
-                            i = Integer.parseInt(qntText.getText().toString());
-                        } catch (NumberFormatException e) {
+                .setPositiveButton("Ok", (dialog, which) -> {
+                    int i = 0;
+                    try {
+                        i = Integer.parseInt(qntText.getText().toString());
+                    } catch (NumberFormatException e) {
+                    }
+                    if (i > 0 && act != null) {
+                        quantity = i;
+                        for (ActItem item : act.items) {
+                            item.quantity = quantity;
                         }
-                        if (i > 0) {
-                            //отправляем результат обратно
-                            Intent intent = new Intent();
-                            intent.putExtra(TAG_QNT_SELECTED, i);
-                            getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, intent);
-                        }
+                        if (act.income) {
+
+                        } else
+                            ((MainActivity) getActivity()).OutcomeMode1SubmitForm(act);
+                        //отправляем результат обратно
+//                            Intent intent = new Intent();
+//                            intent.putExtra(TAG_QNT_SELECTED, i);
+//                            getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, intent);
                     }
                 });
         return builder.create();
     }
-
 
 }

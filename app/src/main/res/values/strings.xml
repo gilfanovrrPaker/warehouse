@@ -13,4 +13,5 @@
     <string name="action_next">Далее</string>
     <string name="input_quantity">Количество</string>
     <string name="quantity">Количество</string>
+    <string name="confirm">Подтвердить</string>
 </resources>
